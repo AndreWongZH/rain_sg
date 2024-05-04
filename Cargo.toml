@@ -1,0 +1,17 @@
+[package]
+name = "rain_sg"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+reqwest = { version = "0.12", features = ["json", "stream"] }
+tokio = { version = "1.8", features = ["full"] }
+regex = "1.5"
+chrono = "0.4.38"
+image = { version = "0.25.1", features = ["gif"] }
+teloxide = { version = "0.12.2", features = ["full"]}
+log = "0.4"
+fern = "0.6"
+humantime = "2.1"
