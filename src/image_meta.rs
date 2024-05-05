@@ -3,7 +3,8 @@ use log::info;
 use reqwest;
 use std::io::copy;
 use chrono::NaiveDateTime;
-use std::error;
+use std::error::Error;
+use std::path::Path;
 
 pub const IMG_DIR: &str = "./img";
 pub const GIF_DIR: &str = "./gif";
@@ -16,7 +17,7 @@ pub struct ImageMeta {
 }
 
 impl ImageMeta {
-    pub fn build_from_str(url: &str) -> Result<ImageMeta, Box<dyn  error::Error>> {
+    pub fn build_from_str(url: &str) -> Result<ImageMeta, Box<dyn  Error>> {
         let datetime = NaiveDateTime::parse_from_str(url, IMAGE_NAME)?;
 
         Ok(ImageMeta {
@@ -24,13 +25,13 @@ impl ImageMeta {
         })
     }
 
-    pub fn build_from_datetime(datetime: NaiveDateTime) -> Result<ImageMeta, Box<dyn error::Error>> {
+    pub fn build_from_datetime(datetime: NaiveDateTime) -> Result<ImageMeta, Box<dyn Error>> {
         Ok(ImageMeta {
             datetime
         })
     }
 
-    pub async fn download_img(&self) -> Result<(), Box<dyn error::Error>> {
+    pub async fn download_img(&self) -> Result<(), Box<dyn Error>> {
         if self.exist() {
             return Ok(());
         }
@@ -40,7 +41,7 @@ impl ImageMeta {
         if resp.status().is_success() {
             let file_path = self.image_path();
             // check if date dir exist, if not create
-            if let Some(parent_dir) = std::path::Path::new(&file_path).parent() {
+            if let Some(parent_dir) = Path::new(&file_path).parent() {
                 if !parent_dir.exists() {
                     info!("Dir {} does not exist, creating it now", parent_dir.display());
                     fs::create_dir_all(parent_dir)?
@@ -78,6 +79,6 @@ impl ImageMeta {
     }
 
     pub fn exist(&self) -> bool {
-        std::path::Path::new(&self.image_path()).exists()
+        Path::new(&self.image_path()).exists()
     }
 }

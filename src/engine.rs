@@ -1,25 +1,26 @@
-use std::error;
-use std::io::BufWriter;
-use std::fs::File;
+use std::{fs, fs::File, io::BufWriter};
 use chrono::{Duration, Local, Timelike};
 use log::{info, warn};
 use tokio::time::Instant;
+use image::{Frame, Delay, io::Reader, codecs::gif::GifEncoder};
 
 use crate::image_meta;
-use image;
 
 #[derive(Clone)]
 pub struct Engine {
     base: image::DynamicImage,
 }
 
-impl Engine {
-    pub fn init() -> Result<Engine, Box<dyn error::Error>> {
-        // create image and gif directory
-        std::fs::create_dir_all(image_meta::IMG_DIR)?;
-        std::fs::create_dir_all(image_meta::GIF_DIR)?;
+// use a type alias here for clearer code
+pub type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>;
 
-        let base = image::io::Reader::open("base.png")?.decode()?;
+impl Engine {
+    pub fn init() -> Result<Engine> {
+        // create image and gif directory
+        fs::create_dir_all(image_meta::IMG_DIR)?;
+        fs::create_dir_all(image_meta::GIF_DIR)?;
+
+        let base = Reader::open("base.png")?.decode()?;
 
         Ok(Engine {
             base,
@@ -28,7 +29,7 @@ impl Engine {
 
     /// this functions returns the file_name of the gif
     /// this gif is generated from the image of the current time rounded off to nearest 5 mins and the last 25 images before that
-    pub async fn generate_current_weather_condition(&self) -> Result<String, Box<dyn error::Error>> {
+    pub async fn generate_current_weather_condition(&self) -> Result<String> {
         let start_time = Instant::now();
         info!("Preparing to generate current weather condition");
         // get current time rounded down to nearest 5 mins
@@ -76,7 +77,7 @@ impl Engine {
     }
 
 
-    async fn create_gif(&self, image_infos: Vec<image_meta::ImageMeta>) -> Result<String, Box<dyn error::Error>>{
+    async fn create_gif(&self, image_infos: Vec<image_meta::ImageMeta>) -> Result<String>{
         let gif_name = self.gif_name(&image_infos);
         let gif_path = self.gif_path(&gif_name);
         let mut frame_list: Vec<image::Frame> = Vec::new();
@@ -99,13 +100,13 @@ impl Engine {
             let mut layered = self.base.clone().to_rgba8();
             image::imageops::overlay(&mut layered , &image_px, 0, 0);
 
-            let frame = image::Frame::from_parts(layered, 0, 0, image::Delay::from_numer_denom_ms(10, 1));
+            let frame = Frame::from_parts(layered, 0, 0, Delay::from_numer_denom_ms(10, 1));
             frame_list.push(frame)
         }
 
         let file = File::create(&gif_path)?;
         let mut writer = BufWriter::new(file);
-        let mut encoder = image::codecs::gif::GifEncoder::new(&mut writer);
+        let mut encoder = GifEncoder::new(&mut writer);
 
         frame_list.reverse();
         encoder.encode_frames(frame_list)?;

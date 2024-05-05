@@ -1,15 +1,15 @@
 use std::time::SystemTime;
-use std::error;
+use chrono::Local;
 use log::{error, info, warn};
 use teloxide::dispatching::HandlerExt;
 use teloxide::types::InputFile;
 use teloxide::{prelude::*, utils::command::BotCommands};
 
-use rain_sg::engine;
+use rain_sg::engine::{self, Result};
 
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> Result<()> {
     setup_logger()?;
     info!("Rain SG Program");
 
@@ -65,6 +65,9 @@ async fn command_handler(bot: Bot, msg: Message, cmd: Command, eng: engine::Engi
         Command::Start => bot.send_message(msg.chat.id, "SG Rain bot, enter /raininfo").await?,
         Command::Help => bot.send_message(msg.chat.id, Command::descriptions().to_string()).await?,
         Command::RainInfo => {
+            let current_time = Local::now();
+            bot.send_message(msg.chat.id, format!("Current time now is: {}, please wait while the gif is being generated", current_time.to_string())).await?;
+
             let gif_name = match eng.generate_current_weather_condition().await {
                 Ok(gif_name) => gif_name,
                 Err(err) => {
@@ -81,7 +84,7 @@ async fn command_handler(bot: Bot, msg: Message, cmd: Command, eng: engine::Engi
 }
 
 
-async fn send_animation_from_file(bot: Bot, msg: Message, file_name: &str) -> Result<Message, Box<dyn error::Error>> {
+async fn send_animation_from_file(bot: Bot, msg: Message, file_name: &str) -> Result<Message> {
     let gif_file = InputFile::file(file_name);
 
     // Send the GIF to the user
@@ -97,7 +100,7 @@ async fn send_animation_from_file(bot: Bot, msg: Message, file_name: &str) -> Re
     }
 }
 
-fn setup_logger() -> Result<(), fern::InitError> {
+fn setup_logger() -> core::result::Result<(), fern::InitError> {
     fern::Dispatch::new()
         .format(|out, message, record| {
                 out.finish(format_args!(
